@@ -1,5 +1,6 @@
 const bodyParser = require("body-parser");
 const request = require("request");
+const fileUpload = require("express-fileupload");
 const express = require("express");
 
 const app = express();
@@ -13,9 +14,20 @@ app.use(
     extended: false
   })
 );
+
+app.use(fileUpload());
+
 app.use(bodyParser.json());
 
-// Push
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept"
+  );
+  next();
+});
+
 app.get("/predict", async (req, res) => {
   let process = spawn("python", [
     "./utility/test.py",
@@ -28,7 +40,17 @@ app.get("/predict", async (req, res) => {
   });
 });
 
-// Reply
+app.post("/upload", (req, res) => {
+  if (Object.keys(req.files).length == 0) {
+    return res.status(400).send("No files were uploaded.");
+  }
+
+  req.files.files.mv("./dataset/" + req.files.files.name, function(err) {
+    if (err) return res.status(500).send(err);
+    res.send(req.files.files.name + " uploaded!");
+  });
+});
+
 app.post("/predict", (req, res) => {
   let msg = "Recieve";
   res.send(msg);
@@ -37,7 +59,7 @@ app.post("/predict", (req, res) => {
   curl("reply", body);
 });
 
-let url = "https://localhost:8080/";
+const url = "https://localhost:8080/";
 
 function curl(method, body) {
   console.log("method:" + method);
