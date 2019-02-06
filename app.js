@@ -19,7 +19,7 @@ app.use(fileUpload());
 
 app.use(bodyParser.json());
 
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Headers",
@@ -28,16 +28,36 @@ app.use(function(req, res, next) {
   next();
 });
 
-app.get("/predict", (req, res) => {
+app.post("/predict", (req, res) => {
+  if (Object.keys(req.files).length == 0) {
+    return res.status(400).send("No files were uploaded.");
+  }
+
+  let fileName = req.files.files.name;
+
+  req.files.files.mv("./predictData/" + fileName, function (err) {
+    if (err) return res.status(500).send(err);
+    res.send(req.files.files.name + " uploaded!");
+  });
+
   let process = spawn("python", [
-    "./utility/test.py",
-    "Jirayu",
-    "Laungwilawan"
+    "./utility/emotionDetection/model.py",
+    "./predictData/" + fileName
   ]);
 
-  process.stdout.on("data", function(data) {
-    res.send(data.toString());
+  process.stdout.on("data", function (data) {
+    console.log(data.toString());
   });
+});
+
+let path = '/Users/Gear/Desktop/emotion_detection_server/result/'
+
+app.get("/predict", (req, res) => {
+  res.sendFile(path + 'JSON/data.json');
+});
+
+app.get("/video", (req, res) => {
+  res.sendFile(path + 'video/output.avi')
 });
 
 app.post("/train", (req, res) => {
@@ -47,15 +67,10 @@ app.post("/train", (req, res) => {
     "./utility/emotionDetection/train.py",
     epchoNumber
   ]);
-  // let process = spawn("python", [
-  //   "./utility/test.py",
-  //   "Jirayu",
-  //   "Laungwilawan"
-  // ]);
-  console.log("Before stdout");
 
-  process.stdout.on("data", function(data) {
-    console.log(data);
+  process.stdout.on("data", function (data) {
+    // res.send(data);
+    console.log(data.toString());
   });
   res.sendStatus(200);
 });
@@ -67,27 +82,18 @@ app.post("/upload/:emotion", (req, res) => {
 
   req.files.files.mv(
     "./dataset/" + req.params.emotion + "/" + req.files.files.name,
-    function(err) {
+    function (err) {
       if (err) return res.status(500).send(err);
       res.send(req.files.files.name + " uploaded!");
     }
   );
 });
 
-app.post("/predict", (req, res) => {
-  let msg = "Recieve";
-  res.send(msg);
-  res.sendStatus(200);
-  console.log(msg);
-  curl("reply", body);
-});
-
 const url = "https://localhost:8080/";
 
 function curl(method, body) {
   console.log("method:" + method);
-  request.post(
-    {
+  request.post({
       url: url + method,
       headers: HEADERS,
       body: body
