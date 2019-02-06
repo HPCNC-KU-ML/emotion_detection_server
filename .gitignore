@@ -18,6 +18,8 @@ node_modules
 package-lock.json
 *.log
 *.gz
+*.avi
+*.mp4
 
 
 # Coveralls
