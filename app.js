@@ -28,7 +28,7 @@ app.use(function(req, res, next) {
   next();
 });
 
-app.get("/predict", async (req, res) => {
+app.get("/predict", (req, res) => {
   let process = spawn("python", [
     "./utility/test.py",
     "Jirayu",
@@ -40,15 +40,38 @@ app.get("/predict", async (req, res) => {
   });
 });
 
-app.post("/upload", (req, res) => {
+app.post("/train", (req, res) => {
+  let epchoNumber = req.body.epochNumber;
+  console.log(epchoNumber);
+  let process = spawn("python", [
+    "./utility/emotionDetection/train.py",
+    epchoNumber
+  ]);
+  // let process = spawn("python", [
+  //   "./utility/test.py",
+  //   "Jirayu",
+  //   "Laungwilawan"
+  // ]);
+  console.log("Before stdout");
+
+  process.stdout.on("data", function(data) {
+    console.log(data);
+  });
+  res.sendStatus(200);
+});
+
+app.post("/upload/:emotion", (req, res) => {
   if (Object.keys(req.files).length == 0) {
     return res.status(400).send("No files were uploaded.");
   }
 
-  req.files.files.mv("./dataset/" + req.files.files.name, function(err) {
-    if (err) return res.status(500).send(err);
-    res.send(req.files.files.name + " uploaded!");
-  });
+  req.files.files.mv(
+    "./dataset/" + req.params.emotion + "/" + req.files.files.name,
+    function(err) {
+      if (err) return res.status(500).send(err);
+      res.send(req.files.files.name + " uploaded!");
+    }
+  );
 });
 
 app.post("/predict", (req, res) => {
