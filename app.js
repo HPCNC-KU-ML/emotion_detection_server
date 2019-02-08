@@ -28,12 +28,16 @@ app.use(function (req, res, next) {
   next();
 });
 
-app.post("/predict", (req, res) => {
+app.post("/predict/:minimumScore", (req, res) => {
+
   if (Object.keys(req.files).length == 0) {
     return res.status(400).send("No files were uploaded.");
   }
 
   let fileName = req.files.files.name;
+  let minimumScore = req.params.minimumScore
+
+  console.log(minimumScore);
 
   req.files.files.mv("./predictData/" + fileName, function (err) {
     if (err) return res.status(500).send(err);
@@ -42,7 +46,8 @@ app.post("/predict", (req, res) => {
 
   let process = spawn("python", [
     "./utility/emotionDetection/model.py",
-    "./predictData/" + fileName
+    "./predictData/" + fileName,
+    minimumScore
   ]);
 
   process.stdout.on("data", function (data) {
@@ -81,7 +86,7 @@ app.post("/upload/:emotion", (req, res) => {
   }
 
   req.files.files.mv(
-    "./dataset/" + req.params.emotion + "/" + req.files.files.name,
+    "./utility/emotionDetection/images/" + req.params.emotion + "/" + req.files.files.name,
     function (err) {
       if (err) return res.status(500).send(err);
       res.send(req.files.files.name + " uploaded!");
